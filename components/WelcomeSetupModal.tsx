@@ -175,7 +175,7 @@ export function WelcomeSetupModal({
           type="button"
           disabled={!canSubmit}
           onClick={handleStart}
-          className="mt-12 w-full rounded-xl bg-[#0B3B24] px-6 py-4 text-base font-semibold text-white shadow-md shadow-zinc-900/15 outline-none transition-all duration-200 ease-out hover:bg-[#0a3420] hover:shadow-lg hover:shadow-zinc-900/20 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#0B3B24]/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none"
+          className="mt-12 w-full rounded-xl bg-forest px-6 py-4 text-base font-semibold text-white shadow-sm outline-none transition-colors duration-200 ease-out hover:bg-forest-hover active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 disabled:pointer-events-none disabled:bg-zinc-200 disabled:text-zinc-500 disabled:shadow-none"
         >
           Start Calculating
         </button>
