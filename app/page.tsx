@@ -1,19 +1,36 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { WelcomeSetupModal } from "@/components/WelcomeSetupModal";
+import {
+  COUNTRIES,
+  STORAGE_KEY,
+  type CountryCurrency,
+  type StoredSetup,
+} from "@/lib/countries";
 
-/** Comma-separated thousands (e.g. 950,000) for large USD amounts */
-function formatUsd(value: number): string {
+const NISAB_SILVER_GRAMS = 595;
+
+function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(Math.abs(value));
+}
+
+function formatWithSymbol(value: number, symbol: string): string {
+  const neg = value < 0 ? "-" : "";
+  return `${neg}${symbol}${formatNumber(value)}`;
 }
 
 type ZakatBlockReason = "nisab" | null;
 
 export default function Home() {
-  const [nisabThreshold, setNisabThreshold] = useState("1500");
+  const [hydrated, setHydrated] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [currencySymbol, setCurrencySymbol] = useState("$");
+  const [currencyCode, setCurrencyCode] = useState("USD");
+  const [nisabThreshold, setNisabThreshold] = useState("");
   const [portfolio, setPortfolio] = useState("");
   const [cash, setCash] = useState("");
   const [liabilities, setLiabilities] = useState("");
@@ -22,6 +39,54 @@ export default function Home() {
   const [zakatDue, setZakatDue] = useState<number | null>(null);
   const [zakatBlockReason, setZakatBlockReason] =
     useState<ZakatBlockReason>(null);
+  const [leadName, setLeadName] = useState("");
+  const [leadEmail, setLeadEmail] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const d = JSON.parse(raw) as StoredSetup;
+        if (
+          d.symbol &&
+          d.currency &&
+          typeof d.silverPerGram === "number" &&
+          d.silverPerGram > 0
+        ) {
+          setCurrencySymbol(d.symbol);
+          setCurrencyCode(d.currency);
+          setNisabThreshold(String(d.silverPerGram * NISAB_SILVER_GRAMS));
+          setShowWelcome(false);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+    setHydrated(true);
+  }, []);
+
+  const handleWelcomeComplete = useCallback(
+    (payload: {
+      country: CountryCurrency;
+      silverPerGram: number;
+      nisabFromSilver: number;
+    }) => {
+      const { country, silverPerGram, nisabFromSilver } = payload;
+      setCurrencySymbol(country.symbol);
+      setCurrencyCode(country.currency);
+      setNisabThreshold(String(nisabFromSilver));
+      const stored: StoredSetup = {
+        countryCode: country.code,
+        countryName: country.name,
+        currency: country.currency,
+        symbol: country.symbol,
+        silverPerGram,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+      setShowWelcome(false);
+    },
+    [],
+  );
 
   const handleCalculate = useCallback(() => {
     const nisab = parseFloat(nisabThreshold.replace(/,/g, "")) || 0;
@@ -42,15 +107,35 @@ export default function Home() {
     setZakatBlockReason(null);
   }, [portfolio, cash, liabilities, freshCapital, nisabThreshold]);
 
+  const cc = (code: string) => `(${code})`;
+
+  if (!hydrated) {
+    return (
+      <div
+        className="flex min-h-screen flex-1 items-center justify-center bg-surface"
+        aria-busy="true"
+        aria-label="Loading"
+      />
+    );
+  }
+
   return (
     <div className="flex min-h-full flex-1 flex-col">
+      <WelcomeSetupModal
+        open={showWelcome}
+        countries={COUNTRIES}
+        onComplete={handleWelcomeComplete}
+      />
+
       <header className="border-b border-border bg-white px-4 py-6 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-lg">
           <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             ClearZakat
           </h1>
           <p className="mt-1 text-sm text-muted sm:text-base">
-            Zakat calculator for stock investors — amounts in USD
+            Zakat calculator for stock investors — amounts in{" "}
+            <span className="font-medium text-foreground">{currencyCode}</span>{" "}
+            <span className="tabular-nums">({currencySymbol})</span>
           </p>
         </div>
       </header>
@@ -70,7 +155,7 @@ export default function Home() {
             <div className="mt-6 flex flex-col gap-5">
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Current Nisab Threshold (USD)
+                  Current Nisab Threshold {cc(currencyCode)}
                 </span>
                 <input
                   type="number"
@@ -82,13 +167,14 @@ export default function Home() {
                   className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
                 />
                 <span className="text-xs leading-relaxed text-muted">
-                  Default approximates common silver Nisab in USD. Please verify
-                  current market rates.
+                  Auto-calculated as 1g silver price × {NISAB_SILVER_GRAMS}{" "}
+                  (approx. silver Nisab weight). Adjust if needed; verify with
+                  current rates.
                 </span>
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Current Stock Portfolio Value (USD)
+                  Current Stock Portfolio Value {cc(currencyCode)}
                 </span>
                 <input
                   type="number"
@@ -103,7 +189,7 @@ export default function Home() {
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Liquid Cash on Hand (USD)
+                  Liquid Cash on Hand {cc(currencyCode)}
                 </span>
                 <input
                   type="number"
@@ -118,7 +204,7 @@ export default function Home() {
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Current Liabilities/Debts (USD)
+                  Current Liabilities/Debts {cc(currencyCode)}
                 </span>
                 <input
                   type="number"
@@ -133,7 +219,7 @@ export default function Home() {
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Fresh Capital Injected (Last 354 Days) (USD)
+                  Fresh Capital Injected (Last 354 Days) {cc(currencyCode)}
                 </span>
                 <input
                   type="number"
@@ -178,13 +264,15 @@ export default function Home() {
                 <dd className="text-xl font-semibold tabular-nums text-foreground sm:text-2xl">
                   {netZakatable === null
                     ? "—"
-                    : `${formatUsd(netZakatable)} USD`}
+                    : formatWithSymbol(netZakatable, currencySymbol)}
                 </dd>
               </div>
               <div className="flex flex-col gap-2">
                 <dt className="text-sm text-muted">Total Zakat Due (2.5%)</dt>
                 <dd className="text-5xl font-bold tabular-nums tracking-tight text-forest sm:text-6xl md:text-7xl">
-                  {zakatDue === null ? "—" : `${formatUsd(zakatDue)} USD`}
+                  {zakatDue === null
+                    ? "—"
+                    : formatWithSymbol(zakatDue, currencySymbol)}
                 </dd>
                 {zakatDue !== null && zakatBlockReason === "nisab" && (
                   <p className="text-sm text-muted">
@@ -193,6 +281,56 @@ export default function Home() {
                 )}
               </div>
             </dl>
+          </section>
+
+          <section
+            className="rounded-2xl border border-emerald-200/80 bg-emerald-50/80 p-6 shadow-sm sm:p-8"
+            aria-labelledby="lead-heading"
+          >
+            <h2
+              id="lead-heading"
+              className="text-lg font-semibold tracking-tight text-foreground sm:text-xl"
+            >
+              Save your record &amp; enter the launch draw
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted">
+              Enter your email to download a PDF copy of your calculation for
+              your records, and automatically enter our launch raffle for a $50
+              Amazon Gift Card!
+            </p>
+            <div className="mt-5 flex flex-col gap-4">
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-foreground">Name</span>
+                <input
+                  type="text"
+                  autoComplete="name"
+                  value={leadName}
+                  onChange={(e) => setLeadName(e.target.value)}
+                  className="w-full rounded-xl border border-emerald-200/90 bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
+                  placeholder="Your name"
+                />
+              </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-foreground">
+                  Email
+                </span>
+                <input
+                  type="email"
+                  autoComplete="email"
+                  inputMode="email"
+                  value={leadEmail}
+                  onChange={(e) => setLeadEmail(e.target.value)}
+                  className="w-full rounded-xl border border-emerald-200/90 bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
+                  placeholder="you@example.com"
+                />
+              </label>
+              <button
+                type="button"
+                className="mt-1 w-full rounded-xl border border-forest/20 bg-forest px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-forest-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50"
+              >
+                Submit &amp; Enter Draw
+              </button>
+            </div>
           </section>
         </div>
       </main>
