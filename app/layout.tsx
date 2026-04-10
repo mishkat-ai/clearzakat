@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "ClearZakat — Zakat calculator for stock investors",
   description:
-    "Estimate Zakat on your stock portfolio, cash, and liabilities (BDT).",
+    "Estimate Zakat on your stock portfolio, cash, and liabilities (USD).",
 };
 
 export default function RootLayout({

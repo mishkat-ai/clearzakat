@@ -2,41 +2,36 @@
 
 import { useCallback, useState } from "react";
 
-/** Comma-separated thousands (e.g. 950,000) for lakhs/crores-scale amounts */
-function formatBdt(value: number): string {
+/** Comma-separated thousands (e.g. 950,000) for large USD amounts */
+function formatUsd(value: number): string {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
 }
 
-type ZakatBlockReason = "haul" | "nisab" | null;
+type ZakatBlockReason = "nisab" | null;
 
 export default function Home() {
-  const [nisabThreshold, setNisabThreshold] = useState("175000");
+  const [nisabThreshold, setNisabThreshold] = useState("1500");
   const [portfolio, setPortfolio] = useState("");
   const [cash, setCash] = useState("");
   const [liabilities, setLiabilities] = useState("");
-  const [haulMet, setHaulMet] = useState(false);
+  const [freshCapital, setFreshCapital] = useState("");
   const [netZakatable, setNetZakatable] = useState<number | null>(null);
   const [zakatDue, setZakatDue] = useState<number | null>(null);
   const [zakatBlockReason, setZakatBlockReason] =
     useState<ZakatBlockReason>(null);
 
   const handleCalculate = useCallback(() => {
-    const nisab =
-      parseFloat(nisabThreshold.replace(/,/g, "")) || 0;
+    const nisab = parseFloat(nisabThreshold.replace(/,/g, "")) || 0;
     const p = parseFloat(portfolio.replace(/,/g, "")) || 0;
     const c = parseFloat(cash.replace(/,/g, "")) || 0;
     const l = parseFloat(liabilities.replace(/,/g, "")) || 0;
-    const net = p + c - l;
+    const f = parseFloat(freshCapital.replace(/,/g, "")) || 0;
+    const net = p + c - l - f;
     setNetZakatable(net);
 
-    if (!haulMet) {
-      setZakatDue(0);
-      setZakatBlockReason("haul");
-      return;
-    }
     if (net < nisab) {
       setZakatDue(0);
       setZakatBlockReason("nisab");
@@ -45,7 +40,7 @@ export default function Home() {
 
     setZakatDue(net * 0.025);
     setZakatBlockReason(null);
-  }, [portfolio, cash, liabilities, nisabThreshold, haulMet]);
+  }, [portfolio, cash, liabilities, freshCapital, nisabThreshold]);
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
@@ -55,7 +50,7 @@ export default function Home() {
             ClearZakat
           </h1>
           <p className="mt-1 text-sm text-muted sm:text-base">
-            Zakat calculator for stock investors — amounts in BDT
+            Zakat calculator for stock investors — amounts in USD
           </p>
         </div>
       </header>
@@ -75,7 +70,7 @@ export default function Home() {
             <div className="mt-6 flex flex-col gap-5">
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Current Nisab Threshold (BDT)
+                  Current Nisab Threshold (USD)
                 </span>
                 <input
                   type="number"
@@ -87,13 +82,13 @@ export default function Home() {
                   className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
                 />
                 <span className="text-xs leading-relaxed text-muted">
-                  Default based on approx. 52.5 bhori of silver. Please verify
+                  Default approximates common silver Nisab in USD. Please verify
                   current market rates.
                 </span>
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Current Stock Portfolio Value (BDT)
+                  Current Stock Portfolio Value (USD)
                 </span>
                 <input
                   type="number"
@@ -108,7 +103,7 @@ export default function Home() {
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Liquid Cash on Hand (BDT)
+                  Liquid Cash on Hand (USD)
                 </span>
                 <input
                   type="number"
@@ -123,7 +118,7 @@ export default function Home() {
               </label>
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Current Liabilities/Debts (BDT)
+                  Current Liabilities/Debts (USD)
                 </span>
                 <input
                   type="number"
@@ -136,25 +131,32 @@ export default function Home() {
                   className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
                 />
               </label>
+              <label className="flex flex-col gap-2">
+                <span className="text-sm font-medium text-foreground">
+                  Fresh Capital Injected (Last 354 Days) (USD)
+                </span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  placeholder="0"
+                  value={freshCapital}
+                  onChange={(e) => setFreshCapital(e.target.value)}
+                  className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
+                />
+                <span className="text-xs leading-relaxed text-muted">
+                  External funds deposited into your portfolio within the last
+                  lunar year have not reached Haul and are exempt from this
+                  year&apos;s calculation.
+                </span>
+              </label>
             </div>
-
-            <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-surface px-4 py-3.5 transition-colors hover:bg-zinc-100/70">
-              <input
-                type="checkbox"
-                checked={haulMet}
-                onChange={(e) => setHaulMet(e.target.checked)}
-                className="accent-forest mt-0.5 size-[1.125rem] shrink-0 rounded border-border focus:ring-2 focus:ring-forest/30 focus:ring-offset-0"
-              />
-              <span className="text-sm leading-snug text-foreground">
-                This wealth has been in my possession for one full lunar year
-                (Haul)
-              </span>
-            </label>
 
             <button
               type="button"
               onClick={handleCalculate}
-              className="mt-6 w-full rounded-xl bg-forest px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-forest-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2"
+              className="mt-8 w-full rounded-xl bg-forest px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-forest-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2"
             >
               Calculate Zakat
             </button>
@@ -176,19 +178,14 @@ export default function Home() {
                 <dd className="text-xl font-semibold tabular-nums text-foreground sm:text-2xl">
                   {netZakatable === null
                     ? "—"
-                    : `${formatBdt(netZakatable)} BDT`}
+                    : `${formatUsd(netZakatable)} USD`}
                 </dd>
               </div>
               <div className="flex flex-col gap-2">
                 <dt className="text-sm text-muted">Total Zakat Due (2.5%)</dt>
                 <dd className="text-5xl font-bold tabular-nums tracking-tight text-forest sm:text-6xl md:text-7xl">
-                  {zakatDue === null ? "—" : `${formatBdt(zakatDue)} BDT`}
+                  {zakatDue === null ? "—" : `${formatUsd(zakatDue)} USD`}
                 </dd>
-                {zakatDue !== null && zakatBlockReason === "haul" && (
-                  <p className="text-sm text-muted">
-                    Zakat is not due until wealth is held for one lunar year.
-                  </p>
-                )}
                 {zakatDue !== null && zakatBlockReason === "nisab" && (
                   <p className="text-sm text-muted">
                     Net assets are below the Nisab threshold.
