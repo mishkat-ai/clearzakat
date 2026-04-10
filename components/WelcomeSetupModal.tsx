@@ -13,6 +13,9 @@ type WelcomeSetupModalProps = {
   }) => void;
 };
 
+const inputClass =
+  "w-full rounded-xl border border-zinc-200/90 bg-white px-4 py-3.5 text-base text-zinc-900 shadow-sm outline-none transition-all duration-200 placeholder:text-zinc-400 focus:border-emerald-800/35 focus:shadow-[0_0_0_3px_rgba(11,59,36,0.08)] focus:ring-0";
+
 export function WelcomeSetupModal({
   open,
   countries,
@@ -60,25 +63,27 @@ export function WelcomeSetupModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-[2px]"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/50 p-5 backdrop-blur-sm sm:p-8"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="welcome-setup-title"
+      aria-labelledby="welcome-baseline-title"
     >
-      <div className="max-h-[min(90vh,640px)] w-full max-w-md overflow-y-auto rounded-2xl border border-border bg-white p-6 shadow-2xl sm:p-8">
-        <h2
-          id="welcome-setup-title"
-          className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
-        >
-          Welcome setup
-        </h2>
-        <p className="mt-2 text-sm leading-relaxed text-muted">
-          Choose your country and today&apos;s silver price so we can set your
-          Nisab and display amounts in your currency.
-        </p>
+      <div className="max-h-[min(90vh,680px)] w-full max-w-[440px] overflow-y-auto rounded-2xl border border-zinc-200/80 bg-white p-8 shadow-2xl shadow-zinc-900/10 sm:p-10 sm:max-w-md">
+        <header className="space-y-3">
+          <h2
+            id="welcome-baseline-title"
+            className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-[1.65rem] sm:leading-snug"
+          >
+            Set Your Financial Baseline
+          </h2>
+          <p className="text-[0.9375rem] leading-relaxed text-zinc-500">
+            We need two quick details to calibrate the Shariah engine to your
+            local currency and market rates.
+          </p>
+        </header>
 
-        <div className="mt-6 flex flex-col gap-2" ref={rootRef}>
-          <label className="text-sm font-medium text-foreground">
+        <div className="mt-10 flex flex-col gap-3" ref={rootRef}>
+          <label className="text-sm font-medium tracking-tight text-zinc-700">
             Select your Country
           </label>
           <div className="relative">
@@ -102,16 +107,16 @@ export function WelcomeSetupModal({
                 setListOpen(true);
                 if (selected) setQuery(selected.name);
               }}
-              className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
+              className={inputClass}
             />
             {listOpen && (
               <ul
                 id="country-listbox"
                 role="listbox"
-                className="absolute z-10 mt-1 max-h-52 w-full overflow-y-auto rounded-xl border border-border bg-white py-1 shadow-lg"
+                className="absolute z-10 mt-2 max-h-52 w-full overflow-y-auto rounded-xl border border-zinc-200/90 bg-white py-1 shadow-lg shadow-zinc-900/5"
               >
                 {filtered.length === 0 ? (
-                  <li className="px-4 py-3 text-sm text-muted">
+                  <li className="px-4 py-3.5 text-sm text-zinc-500">
                     No matches. Try another search.
                   </li>
                 ) : (
@@ -121,7 +126,7 @@ export function WelcomeSetupModal({
                         type="button"
                         role="option"
                         aria-selected={selected?.code === c.code}
-                        className="flex w-full items-center justify-between gap-2 px-4 py-2.5 text-left text-sm text-foreground hover:bg-surface"
+                        className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-sm text-zinc-800 transition-colors duration-150 hover:bg-zinc-50"
                         onClick={() => {
                           setSelected(c);
                           setQuery("");
@@ -129,7 +134,7 @@ export function WelcomeSetupModal({
                         }}
                       >
                         <span>{c.name}</span>
-                        <span className="shrink-0 tabular-nums text-muted">
+                        <span className="shrink-0 tabular-nums text-zinc-500">
                           {c.symbol} · {c.currency}
                         </span>
                       </button>
@@ -140,9 +145,9 @@ export function WelcomeSetupModal({
             )}
           </div>
           {selected && !listOpen && (
-            <p className="text-xs text-muted">
+            <p className="text-xs leading-relaxed text-zinc-500">
               Currency symbol:{" "}
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-zinc-800">
                 {selected.symbol}
               </span>{" "}
               ({selected.currency})
@@ -150,8 +155,8 @@ export function WelcomeSetupModal({
           )}
         </div>
 
-        <label className="mt-5 flex flex-col gap-2">
-          <span className="text-sm font-medium text-foreground">
+        <label className="mt-10 flex flex-col gap-3">
+          <span className="text-sm font-medium tracking-tight text-zinc-700">
             Current price of 1 gram of Silver in your local currency
           </span>
           <input
@@ -162,7 +167,7 @@ export function WelcomeSetupModal({
             placeholder="0"
             value={silver}
             onChange={(e) => setSilver(e.target.value)}
-            className="w-full rounded-xl border border-border bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
+            className={inputClass}
           />
         </label>
 
@@ -170,7 +175,7 @@ export function WelcomeSetupModal({
           type="button"
           disabled={!canSubmit}
           onClick={handleStart}
-          className="mt-8 w-full rounded-xl bg-forest px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-forest-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-45"
+          className="mt-12 w-full rounded-xl bg-[#0B3B24] px-6 py-4 text-base font-semibold text-white shadow-md shadow-zinc-900/15 outline-none transition-all duration-200 ease-out hover:bg-[#0a3420] hover:shadow-lg hover:shadow-zinc-900/20 active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-[#0B3B24]/40 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 disabled:shadow-none"
         >
           Start Calculating
         </button>
