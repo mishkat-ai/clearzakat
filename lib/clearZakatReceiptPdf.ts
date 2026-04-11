@@ -3,12 +3,28 @@ import autoTable from "jspdf-autotable";
 
 const FOREST_RGB: [number, number, number] = [27, 77, 62];
 
+/** jsPDF Helvetica only supports WinANSI; strip symbol + non-ASCII so amounts stay readable. */
+function cleanAmountForPdf(formatted: string, currencySymbol: string): string {
+  let s = formatted;
+  if (currencySymbol) {
+    const parts = s.split(currencySymbol);
+    s = parts.join("");
+  }
+  s = s.replace(/[^\u0020-\u007E]/g, "");
+  const digits = s.replace(/[^\d,.\-]/g, "").trim();
+  if (digits.length > 0) {
+    return digits;
+  }
+  return "Not calculated";
+}
+
 export type ClearZakatReceiptInput = {
   recipientName: string;
   dateLabel: string;
   netZakatableFormatted: string;
   zakatDueFormatted: string;
   currencyCode: string;
+  currencySymbol: string;
 };
 
 export function downloadClearZakatReceiptPdf(input: ClearZakatReceiptInput): void {
@@ -31,14 +47,23 @@ export function downloadClearZakatReceiptPdf(input: ClearZakatReceiptInput): voi
     input.recipientName.trim() || "—";
   doc.text(`Prepared for: ${safeName}`, pageW / 2, 40, { align: "center" });
 
+  const netClean = cleanAmountForPdf(
+    input.netZakatableFormatted,
+    input.currencySymbol,
+  );
+  const zakatClean = cleanAmountForPdf(
+    input.zakatDueFormatted,
+    input.currencySymbol,
+  );
+
   autoTable(doc, {
     startY: 48,
     head: [["Detail", "Value"]],
     body: [
       ["Date", input.dateLabel],
       ["Currency", input.currencyCode],
-      ["Net Zakatable Assets", input.netZakatableFormatted],
-      ["Total Zakat Due (2.5%)", input.zakatDueFormatted],
+      ["Net Zakatable Assets", netClean],
+      ["Total Zakat Due (2.5%)", zakatClean],
     ],
     theme: "striped",
     styles: {

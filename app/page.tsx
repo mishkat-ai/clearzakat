@@ -137,6 +137,7 @@ export default function Home() {
         netZakatableFormatted: netStr,
         zakatDueFormatted: zakatStr,
         currencyCode,
+        currencySymbol,
       });
     });
 
@@ -166,14 +167,7 @@ export default function Home() {
     } finally {
       setLeadSubmitting(false);
     }
-  }, [
-    leadName,
-    leadEmail,
-    netZakatable,
-    zakatDue,
-    currencySymbol,
-    currencyCode,
-  ]);
+  }, [leadName, leadEmail, netZakatable, zakatDue, currencySymbol, currencyCode]);
 
   const handleCalculate = useCallback(() => {
     const nisab = parseFloat(nisabThreshold.replace(/,/g, "")) || 0;
