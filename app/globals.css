@@ -2,12 +2,16 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #1a1a1a;
-  --muted: #737373;
-  --border: #e5e5e5;
-  --forest: #1b4d3e;
-  --forest-hover: #153d32;
-  --surface: #fafafa;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --forest: #0f4d3a;
+  --forest-hover: #0c3d2d;
+  --forest-muted: #135a45;
+  --surface: #f1f5f9;
+  --surface-elevated: #ffffff;
+  --accent-glow: rgba(15, 77, 58, 0.08);
+  --card-ring: rgba(15, 23, 42, 0.06);
 }
 
 @theme inline {
@@ -17,13 +21,16 @@
   --color-border: var(--border);
   --color-forest: var(--forest);
   --color-forest-hover: var(--forest-hover);
+  --color-forest-muted: var(--forest-muted);
   --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--surface);
+  background: linear-gradient(165deg, #f8fafc 0%, #eef2f7 45%, #f1f5f9 100%);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
+  min-height: 100%;
 }

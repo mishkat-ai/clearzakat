@@ -11,6 +11,10 @@ type WelcomeSetupModalProps = {
     silverPerGram: number;
     nisabFromSilver: number;
   }) => void;
+  /** Increment when re-opening so saved country/silver re-seed the form. */
+  baselineSeedKey?: number;
+  baselineCountryCode?: string | null;
+  baselineSilverPerGram?: number | null;
 };
 
 const inputClass =
@@ -20,12 +24,16 @@ export function WelcomeSetupModal({
   open,
   countries,
   onComplete,
+  baselineSeedKey = 0,
+  baselineCountryCode = null,
+  baselineSilverPerGram = null,
 }: WelcomeSetupModalProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<CountryCurrency | null>(null);
   const [silver, setSilver] = useState("");
   const [listOpen, setListOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  const prevOpenRef = useRef(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -48,6 +56,35 @@ export function WelcomeSetupModal({
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
   }, [open]);
+
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      if (baselineCountryCode) {
+        const c = countries.find((x) => x.code === baselineCountryCode);
+        if (c) setSelected(c);
+        if (
+          baselineSilverPerGram != null &&
+          baselineSilverPerGram > 0
+        ) {
+          setSilver(String(baselineSilverPerGram));
+        } else {
+          setSilver("");
+        }
+      } else {
+        setSelected(null);
+        setSilver("");
+      }
+      setQuery("");
+      setListOpen(false);
+    }
+    prevOpenRef.current = open;
+  }, [
+    open,
+    baselineSeedKey,
+    baselineCountryCode,
+    baselineSilverPerGram,
+    countries,
+  ]);
 
   const handleStart = useCallback(() => {
     const g = parseFloat(silver.replace(/,/g, "")) || 0;
