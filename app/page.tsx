@@ -8,8 +8,10 @@ import {
   type CountryCurrency,
   type StoredSetup,
 } from "@/lib/countries";
+import { downloadClearZakatReceiptPdf } from "@/lib/clearZakatReceiptPdf";
 
 const NISAB_SILVER_GRAMS = 595;
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/mwvwgkal";
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -41,6 +43,9 @@ export default function Home() {
     useState<ZakatBlockReason>(null);
   const [leadName, setLeadName] = useState("");
   const [leadEmail, setLeadEmail] = useState("");
+  const [leadSubmitting, setLeadSubmitting] = useState(false);
+  const [leadSuccess, setLeadSuccess] = useState(false);
+  const [leadError, setLeadError] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -87,6 +92,87 @@ export default function Home() {
     },
     [],
   );
+
+  const handleLeadSubmit = useCallback(async () => {
+    const name = leadName.trim();
+    const email = leadEmail.trim();
+    if (!name) {
+      setLeadError("Please enter your name.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setLeadError("Please enter a valid email address.");
+      return;
+    }
+
+    setLeadError(null);
+    setLeadSubmitting(true);
+
+    const dateLabel = new Intl.DateTimeFormat("en-US", {
+      dateStyle: "long",
+    }).format(new Date());
+    const netStr =
+      netZakatable === null
+        ? "Not calculated — tap Calculate Zakat first"
+        : formatWithSymbol(netZakatable, currencySymbol);
+    const zakatStr =
+      zakatDue === null
+        ? "Not calculated — tap Calculate Zakat first"
+        : formatWithSymbol(zakatDue, currencySymbol);
+
+    const formspreePromise = fetch(FORMSPREE_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name, email }),
+    });
+
+    const pdfPromise = Promise.resolve().then(() => {
+      downloadClearZakatReceiptPdf({
+        recipientName: name,
+        dateLabel,
+        netZakatableFormatted: netStr,
+        zakatDueFormatted: zakatStr,
+        currencyCode,
+      });
+    });
+
+    try {
+      const [, res] = await Promise.all([pdfPromise, formspreePromise]);
+      if (!res.ok) {
+        let message = "Submission failed. Please try again.";
+        try {
+          const data = (await res.json()) as {
+            error?: string;
+            errors?: Record<string, string[]>;
+          };
+          if (typeof data.error === "string" && data.error) {
+            message = data.error;
+          } else if (data.errors) {
+            const first = Object.values(data.errors)[0]?.[0];
+            if (first) message = first;
+          }
+        } catch {
+          /* ignore */
+        }
+        throw new Error(message);
+      }
+      setLeadSuccess(true);
+    } catch (e) {
+      setLeadError(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setLeadSubmitting(false);
+    }
+  }, [
+    leadName,
+    leadEmail,
+    netZakatable,
+    zakatDue,
+    currencySymbol,
+    currencyCode,
+  ]);
 
   const handleCalculate = useCallback(() => {
     const nisab = parseFloat(nisabThreshold.replace(/,/g, "")) || 0;
@@ -306,7 +392,8 @@ export default function Home() {
                   autoComplete="name"
                   value={leadName}
                   onChange={(e) => setLeadName(e.target.value)}
-                  className="w-full rounded-xl border border-emerald-200/90 bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
+                  disabled={leadSubmitting || leadSuccess}
+                  className="w-full rounded-xl border border-emerald-200/90 bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20 disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="Your name"
                 />
               </label>
@@ -320,15 +407,27 @@ export default function Home() {
                   inputMode="email"
                   value={leadEmail}
                   onChange={(e) => setLeadEmail(e.target.value)}
-                  className="w-full rounded-xl border border-emerald-200/90 bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20"
+                  disabled={leadSubmitting || leadSuccess}
+                  className="w-full rounded-xl border border-emerald-200/90 bg-white px-4 py-3 text-base text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted/60 focus:border-forest focus:ring-2 focus:ring-forest/20 disabled:cursor-not-allowed disabled:opacity-60"
                   placeholder="you@example.com"
                 />
               </label>
+              {leadError ? (
+                <p className="text-sm text-red-700" role="alert">
+                  {leadError}
+                </p>
+              ) : null}
               <button
                 type="button"
-                className="mt-1 w-full rounded-xl border border-forest/20 bg-forest px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-forest-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50"
+                onClick={handleLeadSubmit}
+                disabled={leadSubmitting || leadSuccess}
+                className="mt-1 w-full rounded-xl border border-forest/20 bg-forest px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-forest-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 disabled:cursor-not-allowed disabled:bg-forest/60 disabled:hover:bg-forest/60"
               >
-                Submit &amp; Enter Draw
+                {leadSuccess
+                  ? "Successfully Entered!"
+                  : leadSubmitting
+                    ? "Sending…"
+                    : "Submit & Enter Draw"}
               </button>
             </div>
           </section>
