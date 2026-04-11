@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { WelcomeSetupModal } from "@/components/WelcomeSetupModal";
 import {
   COUNTRIES,
@@ -11,8 +11,6 @@ import {
 import { downloadClearZakatReceiptPdf } from "@/lib/clearZakatReceiptPdf";
 
 const NISAB_SILVER_GRAMS = 595;
-const FORMSPREE_ENDPOINT = "https://formspree.io/f/mwvwgkal";
-
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 0,
@@ -93,7 +91,10 @@ export default function Home() {
     [],
   );
 
-  const handleLeadSubmit = useCallback(async () => {
+  const handleLeadFormSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
+    console.log("Form submission started");
+    e.preventDefault();
+
     const name = leadName.trim();
     const email = leadEmail.trim();
     if (!name) {
@@ -120,7 +121,7 @@ export default function Home() {
         ? "Not calculated — tap Calculate Zakat first"
         : formatWithSymbol(zakatDue, currencySymbol);
 
-    const formspreePromise = fetch(FORMSPREE_ENDPOINT, {
+    const formspreePromise = fetch("https://formspree.io/f/mwvwgkal", {
       method: "POST",
       headers: {
         Accept: "application/json",
@@ -384,11 +385,16 @@ export default function Home() {
               your records, and automatically enter our launch raffle for a $50
               Amazon Gift Card!
             </p>
-            <div className="mt-5 flex flex-col gap-4">
+            <form
+              className="mt-5 flex flex-col gap-4"
+              noValidate
+              onSubmit={handleLeadFormSubmit}
+            >
               <label className="flex flex-col gap-2">
                 <span className="text-sm font-medium text-foreground">Name</span>
                 <input
                   type="text"
+                  name="name"
                   autoComplete="name"
                   value={leadName}
                   onChange={(e) => setLeadName(e.target.value)}
@@ -403,6 +409,7 @@ export default function Home() {
                 </span>
                 <input
                   type="email"
+                  name="email"
                   autoComplete="email"
                   inputMode="email"
                   value={leadEmail}
@@ -418,8 +425,7 @@ export default function Home() {
                 </p>
               ) : null}
               <button
-                type="button"
-                onClick={handleLeadSubmit}
+                type="submit"
                 disabled={leadSubmitting || leadSuccess}
                 className="mt-1 w-full rounded-xl border border-forest/20 bg-forest px-6 py-3.5 text-base font-semibold text-white shadow-sm transition-colors hover:bg-forest-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-forest focus-visible:ring-offset-2 focus-visible:ring-offset-emerald-50 disabled:cursor-not-allowed disabled:bg-forest/60 disabled:hover:bg-forest/60"
               >
@@ -429,7 +435,7 @@ export default function Home() {
                     ? "Sending…"
                     : "Submit & Enter Draw"}
               </button>
-            </div>
+            </form>
           </section>
         </div>
       </main>
