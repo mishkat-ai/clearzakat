@@ -806,26 +806,39 @@ export default function Home() {
       />
 
       <header className="border-b border-slate-200/70 bg-gradient-to-b from-slate-100/95 via-slate-50/98 to-[#eef3f8] shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] backdrop-blur-md">
-        <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
-          <div className="relative mb-6 flex min-h-[2.75rem] items-start justify-end sm:mb-8">
-            <div
-              className="pointer-events-none absolute inset-x-0 top-0 flex justify-center px-10 sm:px-14"
-              aria-live="polite"
-            >
-              <div className="pointer-events-auto inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-300/50 bg-white/95 px-3 py-1.5 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.14),0_2px_6px_-2px_rgba(5,150,105,0.12)] backdrop-blur-sm sm:gap-2.5 sm:px-4 sm:py-2">
+        <div className="mx-auto max-w-2xl px-4 pb-8 pt-2 sm:px-6 sm:pb-10 sm:pt-4 lg:px-10">
+          <div
+            className={`flex items-center gap-2 pt-4 sm:gap-3 sm:pt-6 ${
+              !showWelcome ? "justify-between" : "justify-start"
+            }`}
+            aria-live="polite"
+          >
+            <div className="min-w-0 flex-1 pr-1 sm:max-w-none sm:flex-none sm:pr-2">
+              <div className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-emerald-300/55 bg-white/95 px-2 py-1 shadow-[0_3px_12px_-3px_rgba(15,23,42,0.12),0_1px_4px_-1px_rgba(5,150,105,0.1)] backdrop-blur-sm sm:gap-2 sm:px-3.5 sm:py-1.5">
                 <span
-                  className="cz-social-proof-dot-sm shrink-0"
+                  className="cz-social-proof-dot-sm shrink-0 max-sm:scale-90"
                   aria-hidden
                 />
-                <p className="truncate text-center text-[10px] font-medium leading-tight tracking-tight text-slate-800 sm:text-xs sm:leading-snug">
-                  <span className="text-emerald-700" aria-hidden>
-                    ●{" "}
+                <p className="min-w-0 truncate text-xs font-medium leading-snug tracking-tight text-slate-800">
+                  <span className="sm:hidden">
+                    <span className="text-emerald-700" aria-hidden>
+                      ●{" "}
+                    </span>
+                    <span className="font-semibold tabular-nums text-slate-900">
+                      [{Math.max(45, liveInvestorCount)}+]
+                    </span>{" "}
+                    <span className="text-slate-600">investors today</span>
                   </span>
-                  <span className="font-semibold tabular-nums text-slate-900">
-                    [{Math.max(42, liveInvestorCount)}+]
-                  </span>{" "}
-                  <span className="text-slate-600">
-                    investors calculated their Zakat in the last 24 hours.
+                  <span className="hidden sm:inline">
+                    <span className="text-emerald-700" aria-hidden>
+                      ●{" "}
+                    </span>
+                    <span className="font-semibold tabular-nums text-slate-900">
+                      [{Math.max(42, liveInvestorCount)}+]
+                    </span>{" "}
+                    <span className="text-slate-600">
+                      investors calculated their Zakat in the last 24 hours.
+                    </span>
                   </span>
                 </p>
               </div>
@@ -834,7 +847,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={openRegionSettings}
-                className="relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-white hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/25 focus-visible:ring-offset-2 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white/90 px-2 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-white hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/25 focus-visible:ring-offset-2 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs"
                 aria-label="Change region and currency"
               >
                 <svg
@@ -857,16 +870,16 @@ export default function Home() {
                     d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"
                   />
                 </svg>
-                <span className="hidden min-[380px]:inline">Region</span>
+                <span className="hidden sm:inline">Region</span>
               </button>
             ) : null}
           </div>
 
-          <div className="flex flex-col gap-3 text-center sm:gap-4 sm:text-left">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
+          <div className="mt-8 flex flex-col gap-4 text-center sm:mt-10 sm:gap-5 sm:text-left">
+            <p className="text-center text-[10px] font-semibold uppercase tracking-widest text-slate-500 sm:text-left sm:text-[11px]">
               Decision clarity
             </p>
-            <h1 className="flex flex-col gap-2 sm:gap-2.5">
+            <h1 className="flex flex-col gap-2.5 sm:gap-3">
               <span className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
                 ClearZakat
               </span>
@@ -895,20 +908,20 @@ export default function Home() {
       <main className="flex flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-7 pb-10 sm:pb-16">
           <div
-            className="rounded-[14px] border border-slate-200/70 bg-slate-200/75 p-[3px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]"
+            className="rounded-full border border-slate-200/70 bg-slate-200/80 p-1 shadow-[inset_0_1px_3px_rgba(15,23,42,0.08)]"
             role="tablist"
             aria-label="Calculator mode"
           >
-            <div className="grid w-full grid-cols-2 gap-[3px]">
+            <div className="grid w-full grid-cols-2 gap-0 overflow-hidden rounded-full">
               <button
                 type="button"
                 role="tab"
                 aria-selected={appMode === "quick"}
                 onClick={() => setAppMode("quick")}
-                className={`relative min-w-0 rounded-[11px] px-2 py-3 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-3.5 sm:text-[0.9375rem] ${
+                className={`relative min-w-0 rounded-l-full px-2 py-3 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-3.5 sm:text-[0.9375rem] ${
                   appMode === "quick"
-                    ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_4px_12px_-4px_rgba(15,23,42,0.12)]"
-                    : "text-slate-500 hover:bg-white/40 hover:text-slate-700"
+                    ? "z-[1] bg-white text-slate-900 shadow-[0_1px_4px_rgba(15,23,42,0.1),0_4px_14px_-4px_rgba(15,23,42,0.14)]"
+                    : "text-slate-500 hover:bg-white/35 hover:text-slate-700"
                 }`}
               >
                 Quick Portfolio
@@ -925,10 +938,10 @@ export default function Home() {
                 role="tab"
                 aria-selected={appMode === "advanced"}
                 onClick={() => setAppMode("advanced")}
-                className={`relative min-w-0 rounded-[11px] px-2 py-3 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-3.5 sm:text-[0.9375rem] ${
+                className={`relative min-w-0 rounded-r-full px-2 py-3 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-3.5 sm:text-[0.9375rem] ${
                   appMode === "advanced"
-                    ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_4px_12px_-4px_rgba(15,23,42,0.12)]"
-                    : "text-slate-500 hover:bg-white/40 hover:text-slate-700"
+                    ? "z-[1] bg-white text-slate-900 shadow-[0_1px_4px_rgba(15,23,42,0.1),0_4px_14px_-4px_rgba(15,23,42,0.14)]"
+                    : "text-slate-500 hover:bg-white/35 hover:text-slate-700"
                 }`}
               >
                 Advanced (Stocks)
