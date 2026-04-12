@@ -54,7 +54,7 @@ body {
   width: 8px;
   flex-shrink: 0;
   border-radius: 9999px;
-  background-color: rgb(5 150 105 / 0.92);
+  background-color: rgb(4 120 87 / 0.95);
   animation: cz-soft-green-pulse 2.35s ease-in-out infinite;
 }
 

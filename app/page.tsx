@@ -805,8 +805,27 @@ export default function Home() {
         baselineSilverPerGram={modalBaselineSilver}
       />
 
-      <header className="border-b border-[var(--card-ring)] bg-surface-elevated/90 px-4 py-7 shadow-sm backdrop-blur-md sm:px-6 lg:px-10">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+      <header className="border-b border-[var(--card-ring)] bg-surface-elevated/95 shadow-sm backdrop-blur-md">
+        <div
+          className="border-b border-emerald-900/12 bg-gradient-to-r from-emerald-50/95 via-white to-emerald-50/95 py-2.5 sm:py-3"
+          aria-live="polite"
+        >
+          <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-2.5 gap-y-1 px-4 sm:px-6 lg:px-10">
+            <span className="cz-social-proof-dot shrink-0" aria-hidden />
+            <p className="text-center text-[11px] font-medium leading-snug tracking-tight text-slate-800 sm:text-xs">
+              <span className="text-emerald-700" aria-hidden>
+                ●{" "}
+              </span>
+              <span className="font-semibold tabular-nums text-slate-950">
+                [{Math.max(42, liveInvestorCount)}+]
+              </span>{" "}
+              <span className="text-slate-700">
+                investors calculated their Zakat in the last 24 hours.
+              </span>
+            </p>
+          </div>
+        </div>
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-7 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:px-6 lg:px-10">
           <div className="min-w-0 flex-1 flex flex-col gap-1">
             <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-forest-muted">
               Decision clarity
@@ -1590,21 +1609,6 @@ export default function Home() {
           </section>
         </div>
       </main>
-
-      <footer className="mt-auto border-t border-slate-200/80 bg-white/70 px-4 py-4 backdrop-blur-md sm:py-5">
-        <div
-          className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-center"
-          aria-live="polite"
-        >
-          <span className="cz-social-proof-dot" aria-hidden />
-          <p className="text-[11px] leading-snug text-slate-500 sm:text-xs">
-            <span className="font-semibold tabular-nums text-slate-700">
-              [{Math.max(42, liveInvestorCount)}+]
-            </span>{" "}
-            investors calculated their Zakat in the last 24 hours.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
