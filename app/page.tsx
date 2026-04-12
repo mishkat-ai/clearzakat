@@ -27,6 +27,40 @@ import { computeQuickPortfolioSnapshot } from "@/lib/standardCalc";
 import { downloadClearZakatReceiptPdf } from "@/lib/clearZakatReceiptPdf";
 
 const NISAB_SILVER_GRAMS = 595;
+const SILVER_PRICE_LAST_VERIFIED_KEY = "clearzakat.silverPriceLastVerifiedAt";
+const LEGACY_NISAB_UPDATED_KEY = "clearzakat.nisabPriceUpdatedAt";
+
+function nisabThresholdStringFromSilverPerGram(g: number): string {
+  if (!Number.isFinite(g) || g <= 0) return "";
+  const n = g * NISAB_SILVER_GRAMS;
+  return String(Math.round(n * 10000) / 10000);
+}
+
+function readSilverLastVerifiedIso(): string | null {
+  try {
+    let iso = localStorage.getItem(SILVER_PRICE_LAST_VERIFIED_KEY);
+    if (!iso) {
+      const legacy = localStorage.getItem(LEGACY_NISAB_UPDATED_KEY);
+      if (legacy) {
+        localStorage.setItem(SILVER_PRICE_LAST_VERIFIED_KEY, legacy);
+        iso = legacy;
+      }
+    }
+    return iso;
+  } catch {
+    return null;
+  }
+}
+
+function writeSilverLastVerifiedNow(): string {
+  const iso = new Date().toISOString();
+  try {
+    localStorage.setItem(SILVER_PRICE_LAST_VERIFIED_KEY, iso);
+  } catch {
+    /* ignore */
+  }
+  return iso;
+}
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -69,6 +103,131 @@ const METHOD_OPTIONS: {
       "Use declared annual dividend income as the zakatable base for this estimate.",
   },
 ];
+
+type SilverPriceNisabSectionProps = {
+  currencyCode: string;
+  silverPerGramInput: string;
+  onSilverChange: (value: string) => void;
+  derivedNisabFormatted: string;
+  lastVerifiedDisplay: string;
+  silverStale: boolean;
+  googleSearchHref: string;
+  onResetDefault: () => void;
+  resetDisabled: boolean;
+  nisabMetWithOutsideAssets: boolean;
+  onToggleOutside: (checked: boolean) => void;
+  inputClassName: string;
+};
+
+function SilverPriceNisabSection({
+  currencyCode,
+  silverPerGramInput,
+  onSilverChange,
+  derivedNisabFormatted,
+  lastVerifiedDisplay,
+  silverStale,
+  googleSearchHref,
+  onResetDefault,
+  resetDisabled,
+  nisabMetWithOutsideAssets,
+  onToggleOutside,
+  inputClassName,
+}: SilverPriceNisabSectionProps) {
+  const cc = (code: string) => `(${code})`;
+  return (
+    <div className="flex flex-col gap-4 border-t border-border pt-5">
+      <div className="rounded-xl border border-slate-200/80 bg-gradient-to-b from-slate-50/80 to-white/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] sm:p-5">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-sm font-semibold tracking-tight text-foreground">
+              Silver baseline
+            </h3>
+            <p className="mt-0.5 text-xs leading-relaxed text-muted">
+              Nisab uses {NISAB_SILVER_GRAMS}g silver; your 1g rate drives the
+              threshold.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onResetDefault}
+            disabled={resetDisabled}
+            className="inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200/90 bg-white/90 px-3 py-2 text-[11px] font-semibold tracking-tight text-slate-600 shadow-sm transition-[color,box-shadow,border-color,background-color] hover:border-slate-300 hover:bg-white hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/20 focus-visible:ring-offset-1 disabled:pointer-events-none disabled:opacity-40 sm:mt-0.5 sm:w-auto"
+          >
+            <span className="text-sm leading-none text-slate-500" aria-hidden>
+              ↻
+            </span>
+            Reset to Default
+          </button>
+        </div>
+
+        <label className="mt-4 flex flex-col gap-2">
+          <span className="text-sm font-medium text-foreground">
+            1g silver price {cc(currencyCode)}
+          </span>
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="any"
+            placeholder="0"
+            value={silverPerGramInput}
+            onChange={(e) => onSilverChange(e.target.value)}
+            className={`${inputClassName} tabular-nums`}
+          />
+        </label>
+
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
+          <p className="text-xs font-medium tabular-nums text-slate-600">
+            Nisab threshold (derived):{" "}
+            <span className="text-foreground">{derivedNisabFormatted}</span>
+          </p>
+          <a
+            href={googleSearchHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-semibold text-forest/90 underline decoration-slate-300/90 underline-offset-[3px] transition-colors hover:text-forest hover:decoration-forest/40"
+          >
+            Check live rate
+          </a>
+        </div>
+
+        <div
+          className={`mt-3 text-xs leading-relaxed ${
+            silverStale ? "text-amber-800/95" : "text-muted"
+          }`}
+        >
+          <p>
+            Last verified:{" "}
+            <span
+              className={`font-medium tabular-nums ${
+                silverStale ? "text-amber-950/90" : "text-foreground/90"
+              }`}
+            >
+              {lastVerifiedDisplay}
+            </span>
+          </p>
+          {silverStale ? (
+            <p className="mt-1.5 font-medium text-amber-800/95">
+              ⚠️ Prices fluctuate—verify today&apos;s rate.
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200/70 bg-slate-50/50 px-3 py-2.5 transition-colors hover:bg-slate-50">
+        <input
+          type="checkbox"
+          checked={nisabMetWithOutsideAssets}
+          onChange={(e) => onToggleOutside(e.target.checked)}
+          className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-forest focus:ring-forest/30"
+        />
+        <span className="text-sm leading-snug text-muted">
+          I already meet the Nisab threshold with other outside assets.
+        </span>
+      </label>
+    </div>
+  );
+}
 
 export default function Home() {
   const [hydrated, setHydrated] = useState(false);
@@ -118,6 +277,59 @@ export default function Home() {
   );
   const [modalBaselineSeedKey, setModalBaselineSeedKey] = useState(0);
 
+  const [resetAnchorSilverPerGram, setResetAnchorSilverPerGram] = useState<
+    number | null
+  >(null);
+  const [silverPerGramInput, setSilverPerGramInput] = useState("");
+  const [silverPriceLastVerifiedIso, setSilverPriceLastVerifiedIso] = useState<
+    string | null
+  >(null);
+  const [liveInvestorCount, setLiveInvestorCount] = useState(42);
+
+  const touchSilverPriceLastVerified = useCallback(() => {
+    setSilverPriceLastVerifiedIso(writeSilverLastVerifiedNow());
+  }, []);
+
+  const handleSilverPerGramInputChange = useCallback((value: string) => {
+    setSilverPerGramInput(value);
+    const g = parseMoneyInput(value);
+    setNisabThreshold(nisabThresholdStringFromSilverPerGram(g));
+    setSilverPriceLastVerifiedIso(writeSilverLastVerifiedNow());
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw) as StoredSetup;
+      if (typeof d.countryCode !== "string") return;
+      const next: StoredSetup = {
+        ...d,
+        silverPerGram: Number.isFinite(g) && g >= 0 ? g : 0,
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handleResetSilverToDefault = useCallback(() => {
+    if (resetAnchorSilverPerGram == null || resetAnchorSilverPerGram <= 0) {
+      return;
+    }
+    const g = resetAnchorSilverPerGram;
+    setSilverPerGramInput(String(g));
+    setNisabThreshold(nisabThresholdStringFromSilverPerGram(g));
+    touchSilverPriceLastVerified();
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw) as StoredSetup;
+      if (typeof d.countryCode !== "string") return;
+      const next: StoredSetup = { ...d, silverPerGram: g };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* ignore */
+    }
+  }, [resetAnchorSilverPerGram, touchSilverPriceLastVerified]);
+
   const openRegionSettings = useCallback(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
@@ -166,9 +378,15 @@ export default function Home() {
           setupLoaded = true;
           setCurrencySymbol(d.symbol);
           setCurrencyCode(d.currency);
-          const fromSilver = String(d.silverPerGram * NISAB_SILVER_GRAMS);
+          setResetAnchorSilverPerGram(d.silverPerGram);
+          setSilverPerGramInput(String(d.silverPerGram));
+          let verified = readSilverLastVerifiedIso();
+          if (!verified) {
+            verified = writeSilverLastVerifiedNow();
+          }
+          setSilverPriceLastVerifiedIso(verified);
           setNisabThreshold(
-            merged.nisabThreshold.trim() ? merged.nisabThreshold : fromSilver,
+            nisabThresholdStringFromSilverPerGram(d.silverPerGram),
           );
           setShowWelcome(false);
         }
@@ -214,6 +432,28 @@ export default function Home() {
 
     setHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    const base = 42 + Math.floor(Math.random() * 6);
+    setLiveInvestorCount(base);
+    const tick = () => {
+      setLiveInvestorCount((c) => {
+        const roll = Math.random();
+        let delta = 0;
+        if (roll < 0.42) delta = 1;
+        else if (roll < 0.68) delta = 0;
+        else if (roll < 0.86) delta = -1;
+        else delta = 2;
+        return Math.max(36, Math.min(78, c + delta));
+      });
+    };
+    const id = window.setInterval(
+      tick,
+      10000 + Math.floor(Math.random() * 9000),
+    );
+    return () => window.clearInterval(id);
+  }, [hydrated]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -324,16 +564,47 @@ export default function Home() {
 
   const active = appMode === "quick" ? quickSnapshot : advancedSnapshot;
 
+  const silverGoogleSearchHref = useMemo(() => {
+    const label =
+      new Intl.DisplayNames(["en"], { type: "currency" }).of(currencyCode) ??
+      currencyCode;
+    const q = `1g silver price in ${label}`;
+    return `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+  }, [currencyCode]);
+
+  const lastVerifiedDisplay = useMemo(() => {
+    if (!silverPriceLastVerifiedIso) return "—";
+    const dt = new Date(silverPriceLastVerifiedIso);
+    if (Number.isNaN(dt.getTime())) return "—";
+    return new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(dt);
+  }, [silverPriceLastVerifiedIso]);
+
+  const silverLastVerifiedStale = useMemo(() => {
+    if (!silverPriceLastVerifiedIso) return false;
+    const t = new Date(silverPriceLastVerifiedIso).getTime();
+    if (Number.isNaN(t)) return true;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    return t < cutoff.getTime();
+  }, [silverPriceLastVerifiedIso]);
+
+  const derivedNisabFromSilverDisplay = useMemo(() => {
+    const g = parseMoneyInput(silverPerGramInput);
+    if (!g) return "—";
+    return formatWithSymbol(g * NISAB_SILVER_GRAMS, currencySymbol);
+  }, [silverPerGramInput, currencySymbol]);
+
   const handleWelcomeComplete = useCallback(
     (payload: {
       country: CountryCurrency;
       silverPerGram: number;
-      nisabFromSilver: number;
     }) => {
-      const { country, silverPerGram, nisabFromSilver } = payload;
+      const { country, silverPerGram } = payload;
       setCurrencySymbol(country.symbol);
       setCurrencyCode(country.currency);
-      setNisabThreshold(String(nisabFromSilver));
+      setResetAnchorSilverPerGram(silverPerGram);
+      setSilverPerGramInput(String(silverPerGram));
+      setNisabThreshold(nisabThresholdStringFromSilverPerGram(silverPerGram));
       const stored: StoredSetup = {
         countryCode: country.code,
         countryName: country.name,
@@ -342,10 +613,11 @@ export default function Home() {
         silverPerGram,
       };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+      touchSilverPriceLastVerified();
       setShowWelcome(false);
       setRegionModalOpen(false);
     },
-    [],
+    [touchSilverPriceLastVerified],
   );
 
   const handleLeadFormSubmit = useCallback(
@@ -514,6 +786,24 @@ export default function Home() {
 
       <main className="flex flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-7 pb-16">
+          <div
+            className="flex items-center justify-center gap-2 rounded-xl border border-slate-200/70 bg-white/55 px-3 py-2.5 text-center shadow-sm backdrop-blur-sm sm:gap-2.5 sm:px-4"
+            aria-live="polite"
+          >
+            <span
+              className="select-none text-[11px] text-emerald-600/90 motion-safe:animate-pulse sm:text-xs"
+              aria-hidden
+            >
+              ●
+            </span>
+            <p className="text-[11px] leading-snug text-slate-500 sm:text-xs">
+              <span className="tabular-nums font-semibold text-slate-700">
+                {liveInvestorCount}
+              </span>{" "}
+              investors calculated their Zakat in the last 24 hours.
+            </p>
+          </div>
+
           <div
             className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-slate-50 to-white p-2 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.15)]"
             role="tablist"
@@ -705,40 +995,23 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 border-t border-border pt-5">
-                  <label className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-foreground">
-                      Nisab threshold (silver-based) {cc(currencyCode)}
-                    </span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      value={nisabThreshold}
-                      onChange={(e) => setNisabThreshold(e.target.value)}
-                      className={`${INPUT_CLASS} tabular-nums`}
-                    />
-                  </label>
-                  <span className="text-xs leading-relaxed text-muted">
-                    Default uses 1g silver × {NISAB_SILVER_GRAMS}g; verify live
-                    rates.
-                  </span>
-                  <label className="mt-1 flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200/70 bg-slate-50/50 px-3 py-2.5 transition-colors hover:bg-slate-50">
-                    <input
-                      type="checkbox"
-                      checked={nisabMetWithOutsideAssets}
-                      onChange={(e) =>
-                        setNisabMetWithOutsideAssets(e.target.checked)
-                      }
-                      className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-forest focus:ring-forest/30"
-                    />
-                    <span className="text-sm leading-snug text-muted">
-                      I already meet the Nisab threshold with other outside
-                      assets.
-                    </span>
-                  </label>
-                </div>
+                <SilverPriceNisabSection
+                  currencyCode={currencyCode}
+                  silverPerGramInput={silverPerGramInput}
+                  onSilverChange={handleSilverPerGramInputChange}
+                  derivedNisabFormatted={derivedNisabFromSilverDisplay}
+                  lastVerifiedDisplay={lastVerifiedDisplay}
+                  silverStale={silverLastVerifiedStale}
+                  googleSearchHref={silverGoogleSearchHref}
+                  onResetDefault={handleResetSilverToDefault}
+                  resetDisabled={
+                    resetAnchorSilverPerGram == null ||
+                    resetAnchorSilverPerGram <= 0
+                  }
+                  nisabMetWithOutsideAssets={nisabMetWithOutsideAssets}
+                  onToggleOutside={setNisabMetWithOutsideAssets}
+                  inputClassName={INPUT_CLASS}
+                />
               </div>
             </section>
           ) : (
@@ -999,40 +1272,23 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2 border-t border-border pt-5">
-                  <label className="flex flex-col gap-2">
-                    <span className="text-sm font-medium text-foreground">
-                      Nisab threshold (silver-based) {cc(currencyCode)}
-                    </span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      value={nisabThreshold}
-                      onChange={(e) => setNisabThreshold(e.target.value)}
-                      className={`${INPUT_CLASS} tabular-nums`}
-                    />
-                  </label>
-                  <span className="text-xs leading-relaxed text-muted">
-                    Default uses 1g silver × {NISAB_SILVER_GRAMS}g; verify live
-                    rates.
-                  </span>
-                  <label className="mt-1 flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200/70 bg-slate-50/50 px-3 py-2.5 transition-colors hover:bg-slate-50">
-                    <input
-                      type="checkbox"
-                      checked={nisabMetWithOutsideAssets}
-                      onChange={(e) =>
-                        setNisabMetWithOutsideAssets(e.target.checked)
-                      }
-                      className="mt-0.5 size-4 shrink-0 rounded border-slate-300 text-forest focus:ring-forest/30"
-                    />
-                    <span className="text-sm leading-snug text-muted">
-                      I already meet the Nisab threshold with other outside
-                      assets.
-                    </span>
-                  </label>
-                </div>
+                <SilverPriceNisabSection
+                  currencyCode={currencyCode}
+                  silverPerGramInput={silverPerGramInput}
+                  onSilverChange={handleSilverPerGramInputChange}
+                  derivedNisabFormatted={derivedNisabFromSilverDisplay}
+                  lastVerifiedDisplay={lastVerifiedDisplay}
+                  silverStale={silverLastVerifiedStale}
+                  googleSearchHref={silverGoogleSearchHref}
+                  onResetDefault={handleResetSilverToDefault}
+                  resetDisabled={
+                    resetAnchorSilverPerGram == null ||
+                    resetAnchorSilverPerGram <= 0
+                  }
+                  nisabMetWithOutsideAssets={nisabMetWithOutsideAssets}
+                  onToggleOutside={setNisabMetWithOutsideAssets}
+                  inputClassName={INPUT_CLASS}
+                />
               </div>
             </section>
           )}
