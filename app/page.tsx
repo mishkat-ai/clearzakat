@@ -805,83 +805,118 @@ export default function Home() {
         baselineSilverPerGram={modalBaselineSilver}
       />
 
-      <header className="border-b border-[var(--card-ring)] bg-surface-elevated/95 shadow-sm backdrop-blur-md">
-        <div
-          className="border-b border-emerald-900/12 bg-gradient-to-r from-emerald-50/95 via-white to-emerald-50/95 py-2.5 sm:py-3"
-          aria-live="polite"
-        >
-          <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-2.5 gap-y-1 px-4 sm:px-6 lg:px-10">
-            <span className="cz-social-proof-dot shrink-0" aria-hidden />
-            <p className="text-center text-[11px] font-medium leading-snug tracking-tight text-slate-800 sm:text-xs">
-              <span className="text-emerald-700" aria-hidden>
-                ●{" "}
-              </span>
-              <span className="font-semibold tabular-nums text-slate-950">
-                [{Math.max(42, liveInvestorCount)}+]
-              </span>{" "}
-              <span className="text-slate-700">
-                investors calculated their Zakat in the last 24 hours.
-              </span>
-            </p>
+      <header className="border-b border-slate-200/70 bg-gradient-to-b from-slate-100/95 via-slate-50/98 to-[#eef3f8] shadow-[0_1px_0_rgba(255,255,255,0.8)_inset] backdrop-blur-md">
+        <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
+          <div className="relative mb-6 flex min-h-[2.75rem] items-start justify-end sm:mb-8">
+            <div
+              className="pointer-events-none absolute inset-x-0 top-0 flex justify-center px-10 sm:px-14"
+              aria-live="polite"
+            >
+              <div className="pointer-events-auto inline-flex max-w-full items-center gap-2 rounded-full border border-emerald-300/50 bg-white/95 px-3 py-1.5 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.14),0_2px_6px_-2px_rgba(5,150,105,0.12)] backdrop-blur-sm sm:gap-2.5 sm:px-4 sm:py-2">
+                <span
+                  className="cz-social-proof-dot-sm shrink-0"
+                  aria-hidden
+                />
+                <p className="truncate text-center text-[10px] font-medium leading-tight tracking-tight text-slate-800 sm:text-xs sm:leading-snug">
+                  <span className="text-emerald-700" aria-hidden>
+                    ●{" "}
+                  </span>
+                  <span className="font-semibold tabular-nums text-slate-900">
+                    [{Math.max(42, liveInvestorCount)}+]
+                  </span>{" "}
+                  <span className="text-slate-600">
+                    investors calculated their Zakat in the last 24 hours.
+                  </span>
+                </p>
+              </div>
+            </div>
+            {!showWelcome ? (
+              <button
+                type="button"
+                onClick={openRegionSettings}
+                className="relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-slate-200/80 bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-white hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/25 focus-visible:ring-offset-2 sm:gap-2 sm:px-3 sm:py-2 sm:text-xs"
+                aria-label="Change region and currency"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="size-3.5 shrink-0 text-slate-500 sm:size-4"
+                  aria-hidden
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.65.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.396 2.598a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.292.24-.437.613-.43.992a6.932 6.932 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.954.26 1.43l-1.298 2.598a1.125 1.125 0 0 1-1.37.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 0 1-.22.128c-.338.183-.587.494-.65.868l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.649-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.598a1.125 1.125 0 0 1-.26-1.43l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 0 1 0-.255c.007-.379-.138-.75-.43-.991l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.598a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.337-.183.588-.495.65-.869l.214-1.281z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"
+                  />
+                </svg>
+                <span className="hidden min-[380px]:inline">Region</span>
+              </button>
+            ) : null}
           </div>
-        </div>
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-4 py-7 sm:flex-row sm:items-start sm:justify-between sm:gap-6 sm:px-6 lg:px-10">
-          <div className="min-w-0 flex-1 flex flex-col gap-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-forest-muted">
+
+          <div className="flex flex-col gap-3 text-center sm:gap-4 sm:text-left">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">
               Decision clarity
             </p>
-            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-              ClearZakat: For Stock Investors
+            <h1 className="flex flex-col gap-2 sm:gap-2.5">
+              <span className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+                ClearZakat
+              </span>
+              <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500 sm:text-xs sm:tracking-[0.32em]">
+                For Stock Investors
+              </span>
             </h1>
-            <p className="max-w-xl text-sm leading-relaxed text-muted sm:text-[0.9375rem]">
+            <p className="mx-auto max-w-xl text-sm leading-relaxed text-slate-600 sm:mx-0 sm:text-[0.9375rem]">
               Use{" "}
-              <span className="font-medium text-foreground">Quick Portfolio</span>{" "}
+              <span className="font-medium text-slate-800">Quick Portfolio</span>{" "}
               for a simple stock + cash view, or{" "}
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-slate-800">
                 Advanced (Stocks)
               </span>{" "}
               for a guided method choice. Amounts in{" "}
-              <span className="font-medium text-foreground">{currencyCode}</span>{" "}
-              <span className="tabular-nums text-foreground/90">
+              <span className="font-medium text-slate-800">{currencyCode}</span>{" "}
+              <span className="tabular-nums text-slate-800">
                 ({currencySymbol})
               </span>
               .
             </p>
           </div>
-          {!showWelcome ? (
-            <button
-              type="button"
-              onClick={openRegionSettings}
-              className="shrink-0 self-end rounded-lg px-1 py-0.5 text-sm text-gray-500 transition-colors hover:text-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/25 focus-visible:ring-offset-2 sm:self-start sm:pt-1"
-              aria-label="Change region and currency"
-            >
-              <span aria-hidden>⚙️</span> Change Region/Currency
-            </button>
-          ) : null}
         </div>
       </header>
 
       <main className="flex flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
         <div className="mx-auto flex w-full max-w-2xl flex-col gap-7 pb-10 sm:pb-16">
           <div
-            className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-slate-50 to-white p-1.5 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.15)] sm:p-2"
+            className="rounded-[14px] border border-slate-200/70 bg-slate-200/75 p-[3px] shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]"
             role="tablist"
             aria-label="Calculator mode"
           >
-            <div className="flex flex-col gap-1.5 sm:grid sm:grid-cols-2 sm:gap-1.5">
+            <div className="grid w-full grid-cols-2 gap-[3px]">
               <button
                 type="button"
                 role="tab"
                 aria-selected={appMode === "quick"}
                 onClick={() => setAppMode("quick")}
-                className={`relative w-full min-w-0 rounded-xl px-3 py-3.5 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-4 sm:text-[0.9375rem] ${
+                className={`relative min-w-0 rounded-[11px] px-2 py-3 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-3.5 sm:text-[0.9375rem] ${
                   appMode === "quick"
-                    ? "bg-white text-foreground shadow-md ring-1 ring-slate-200/90"
-                    : "text-muted hover:bg-white/50 hover:text-foreground"
+                    ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_4px_12px_-4px_rgba(15,23,42,0.12)]"
+                    : "text-slate-500 hover:bg-white/40 hover:text-slate-700"
                 }`}
               >
                 Quick Portfolio
-                <span className="mt-1 block text-[10px] font-normal uppercase tracking-wide text-muted sm:text-[11px]">
+                <span
+                  className={`mt-0.5 block text-[9px] font-medium uppercase tracking-wide sm:mt-1 sm:text-[10px] ${
+                    appMode === "quick" ? "text-slate-500" : "text-slate-400"
+                  }`}
+                >
                   Stocks + cash
                 </span>
               </button>
@@ -890,14 +925,18 @@ export default function Home() {
                 role="tab"
                 aria-selected={appMode === "advanced"}
                 onClick={() => setAppMode("advanced")}
-                className={`relative w-full min-w-0 rounded-xl px-3 py-3.5 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-4 sm:text-[0.9375rem] ${
+                className={`relative min-w-0 rounded-[11px] px-2 py-3 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-3.5 sm:text-[0.9375rem] ${
                   appMode === "advanced"
-                    ? "bg-white text-foreground shadow-md ring-1 ring-slate-200/90"
-                    : "text-muted hover:bg-white/50 hover:text-foreground"
+                    ? "bg-white text-slate-900 shadow-[0_1px_3px_rgba(15,23,42,0.08),0_4px_12px_-4px_rgba(15,23,42,0.12)]"
+                    : "text-slate-500 hover:bg-white/40 hover:text-slate-700"
                 }`}
               >
                 Advanced (Stocks)
-                <span className="mt-1 block text-[10px] font-normal uppercase tracking-wide text-muted sm:text-[11px]">
+                <span
+                  className={`mt-0.5 block text-[9px] font-medium uppercase tracking-wide sm:mt-1 sm:text-[10px] ${
+                    appMode === "advanced" ? "text-slate-500" : "text-slate-400"
+                  }`}
+                >
                   Portfolio & methods
                 </span>
               </button>

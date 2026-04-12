@@ -64,3 +64,19 @@ body {
     opacity: 0.9;
   }
 }
+
+.cz-social-proof-dot-sm {
+  height: 6px;
+  width: 6px;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  background-color: rgb(4 120 87 / 0.95);
+  animation: cz-soft-green-pulse 2.35s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cz-social-proof-dot-sm {
+    animation: none;
+    opacity: 0.9;
+  }
+}
