@@ -74,6 +74,28 @@ function formatWithSymbol(value: number, symbol: string): string {
   return `${neg}${symbol}${formatNumber(value)}`;
 }
 
+function MathLine({
+  sign,
+  label,
+  value,
+}: {
+  sign: "+" | "−" | "=";
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-baseline gap-3 border-b border-slate-200/60 py-2.5 last:border-b-0">
+      <span className="w-5 shrink-0 text-center text-base font-semibold text-slate-400">
+        {sign}
+      </span>
+      <span className="min-w-0 flex-1 text-sm text-slate-600">{label}</span>
+      <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+        {value}
+      </span>
+    </div>
+  );
+}
+
 const INPUT_CLASS =
   "w-full rounded-xl border border-slate-200/90 bg-white px-4 py-3 text-base text-foreground shadow-sm outline-none transition-[box-shadow,border-color] placeholder:text-muted/50 focus:border-forest/40 focus:ring-2 focus:ring-[var(--accent-glow)]";
 
@@ -88,19 +110,17 @@ const METHOD_OPTIONS: {
   {
     id: "full",
     title: "Full portfolio value",
-    description: "Treat stocks and cash at face value before deductions.",
+    description: "100% of stocks + cash (+ optional assets), then deductions.",
   },
   {
     id: "quarter",
     title: "Zakatable assets only (~25% proxy)",
-    description:
-      "Apply a stock proxy rate to listed equities, plus full cash, before deductions.",
+    description: "Proxy % on stocks + full cash (+ optional), then deductions.",
   },
   {
     id: "dividend",
     title: "Dividend yield only",
-    description:
-      "Use declared annual dividend income as the zakatable base for this estimate.",
+    description: "Dividends (+ optional assets) as base; no portfolio deductions.",
   },
 ];
 
@@ -170,48 +190,62 @@ function SilverPriceNisabSection({
             min={0}
             step="any"
             placeholder="0"
+            name="silverPerGram"
+            autoComplete="off"
             value={silverPerGramInput}
             onChange={(e) => onSilverChange(e.target.value)}
             className={`${inputClassName} tabular-nums`}
           />
         </label>
 
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <p className="text-xs font-medium tabular-nums text-slate-600">
-            Nisab threshold (derived):{" "}
-            <span className="text-foreground">{derivedNisabFormatted}</span>
-          </p>
-          <a
-            href={googleSearchHref}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-semibold text-forest/90 underline decoration-slate-300/90 underline-offset-[3px] transition-colors hover:text-forest hover:decoration-forest/40"
-          >
-            Check live rate
-          </a>
-        </div>
+        <a
+          href={googleSearchHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex w-fit items-center gap-1 text-sm font-semibold text-forest/95 underline decoration-slate-300/80 underline-offset-[3px] transition-colors hover:text-forest hover:decoration-forest/45"
+        >
+          Check live rate <span aria-hidden>↗</span>
+        </a>
 
         <div
-          className={`mt-3 text-xs leading-relaxed ${
-            silverStale ? "text-amber-800/95" : "text-muted"
+          className={`mt-4 rounded-lg border border-slate-200/70 bg-white/70 px-3 py-2.5 ${
+            silverStale ? "border-amber-200/80 bg-amber-50/35" : ""
           }`}
         >
-          <p>
-            Last verified:{" "}
-            <span
-              className={`font-medium tabular-nums ${
-                silverStale ? "text-amber-950/90" : "text-foreground/90"
-              }`}
-            >
-              {lastVerifiedDisplay}
-            </span>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+            Active auditor
           </p>
-          {silverStale ? (
-            <p className="mt-1.5 font-medium text-amber-800/95">
-              ⚠️ Prices fluctuate—verify today&apos;s rate.
+          <div
+            className={`mt-1.5 text-xs leading-relaxed ${
+              silverStale ? "text-amber-900/95" : "text-slate-600"
+            }`}
+          >
+            <p className="font-medium">
+              Last verified:{" "}
+              <span
+                className={`tabular-nums ${
+                  silverStale ? "text-amber-950" : "text-foreground"
+                }`}
+              >
+                {lastVerifiedDisplay}
+              </span>
             </p>
-          ) : null}
+            {silverStale ? (
+              <p className="mt-1.5 text-[11px] font-medium leading-snug text-amber-900/95">
+                ⚠️ Prices fluctuate—verify today&apos;s rate.
+              </p>
+            ) : (
+              <p className="mt-1 text-[11px] leading-snug text-slate-500">
+                Updates whenever you change the 1g rate above.
+              </p>
+            )}
+          </div>
         </div>
+
+        <p className="mt-3 text-xs font-medium tabular-nums text-slate-600">
+          Nisab threshold (derived):{" "}
+          <span className="text-foreground">{derivedNisabFormatted}</span>
+        </p>
       </div>
 
       <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-200/70 bg-slate-50/50 px-3 py-2.5 transition-colors hover:bg-slate-50">
@@ -648,7 +682,10 @@ export default function Home() {
         snap.netZakatableAmount,
         currencySymbol,
       );
-      const zakatStr = formatWithSymbol(snap.zakatDue, currencySymbol);
+      const zakatStr = formatWithSymbol(
+        Math.max(0, snap.zakatDue),
+        currencySymbol,
+      );
 
       const formspreePromise = fetch("https://formspree.io/f/mwvwgkal", {
         method: "POST",
@@ -712,19 +749,40 @@ export default function Home() {
 
   const cc = (code: string) => `(${code})`;
 
-  const nisabBadgeClass =
-    active.nisabStatus === "above_nisab"
-      ? "border-emerald-200/80 bg-emerald-50 text-emerald-900"
-      : active.nisabStatus === "below_nisab"
-        ? "border-amber-200/80 bg-amber-50 text-amber-950"
-        : "border-slate-200/90 bg-slate-100 text-slate-800";
-
-  const nisabBadgeLabel =
-    active.nisabStatus === "above_nisab"
-      ? "Status: Above Nisab (Zakat Applicable)"
-      : active.nisabStatus === "below_nisab"
-        ? "Status: Below Nisab (No Zakat Due)"
-        : "Status: No Zakat Due";
+  const eligibilityCard = useMemo(() => {
+    const nisabVal = parseMoneyInput(nisabThreshold);
+    const net = active.netZakatableAmount;
+    const fs = (n: number) => formatWithSymbol(n, currencySymbol);
+    if (nisabMetWithOutsideAssets) {
+      return {
+        title: "Status: Above Nisab",
+        subtext: `You indicated Nisab is met with outside assets. Net zakatable amount: ${fs(net)}.`,
+        positive: true,
+      };
+    }
+    if (active.nisabStatus === "above_nisab") {
+      return {
+        title: "Status: Above Nisab",
+        subtext: `Your net zakatable amount of ${fs(net)} exceeds the Nisab threshold of ${fs(nisabVal)}.`,
+        positive: true,
+      };
+    }
+    if (active.nisabStatus === "below_nisab") {
+      return {
+        title: "Status: Below Nisab",
+        subtext: `Your net zakatable amount of ${fs(net)} is below the Nisab threshold of ${fs(nisabVal)}.`,
+        positive: false,
+      };
+    }
+    return {
+      title: "Status: No Zakat Due",
+      subtext:
+        net <= 0
+          ? "After deductions, there is no zakatable surplus."
+          : `Net zakatable amount is ${fs(net)}.`,
+      positive: false,
+    };
+  }, [active, currencySymbol, nisabMetWithOutsideAssets, nisabThreshold]);
 
   if (!hydrated) {
     return (
@@ -737,7 +795,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex min-h-full flex-1 flex-col">
+    <div className="flex min-h-[100dvh] flex-1 flex-col">
       <WelcomeSetupModal
         open={showWelcome || regionModalOpen}
         countries={COUNTRIES}
@@ -763,7 +821,7 @@ export default function Home() {
               <span className="font-medium text-foreground">
                 Advanced (Stocks)
               </span>{" "}
-              for methods and holding intent. Amounts in{" "}
+              for a guided method choice. Amounts in{" "}
               <span className="font-medium text-foreground">{currencyCode}</span>{" "}
               <span className="tabular-nums text-foreground/90">
                 ({currencySymbol})
@@ -785,37 +843,19 @@ export default function Home() {
       </header>
 
       <main className="flex flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 lg:px-10">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-7 pb-16">
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-7 pb-10 sm:pb-16">
           <div
-            className="flex items-center justify-center gap-2 rounded-xl border border-slate-200/70 bg-white/55 px-3 py-2.5 text-center shadow-sm backdrop-blur-sm sm:gap-2.5 sm:px-4"
-            aria-live="polite"
-          >
-            <span
-              className="select-none text-[11px] text-emerald-600/90 motion-safe:animate-pulse sm:text-xs"
-              aria-hidden
-            >
-              ●
-            </span>
-            <p className="text-[11px] leading-snug text-slate-500 sm:text-xs">
-              <span className="tabular-nums font-semibold text-slate-700">
-                {liveInvestorCount}
-              </span>{" "}
-              investors calculated their Zakat in the last 24 hours.
-            </p>
-          </div>
-
-          <div
-            className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-slate-50 to-white p-2 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.15)]"
+            className="rounded-2xl border border-slate-200/90 bg-gradient-to-b from-slate-50 to-white p-1.5 shadow-[0_8px_30px_-12px_rgba(15,23,42,0.15)] sm:p-2"
             role="tablist"
             aria-label="Calculator mode"
           >
-            <div className="grid grid-cols-2 gap-1 sm:gap-1.5">
+            <div className="flex flex-col gap-1.5 sm:grid sm:grid-cols-2 sm:gap-1.5">
               <button
                 type="button"
                 role="tab"
                 aria-selected={appMode === "quick"}
                 onClick={() => setAppMode("quick")}
-                className={`relative rounded-xl px-3 py-3.5 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-4 sm:text-[0.9375rem] ${
+                className={`relative w-full min-w-0 rounded-xl px-3 py-3.5 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-4 sm:text-[0.9375rem] ${
                   appMode === "quick"
                     ? "bg-white text-foreground shadow-md ring-1 ring-slate-200/90"
                     : "text-muted hover:bg-white/50 hover:text-foreground"
@@ -831,7 +871,7 @@ export default function Home() {
                 role="tab"
                 aria-selected={appMode === "advanced"}
                 onClick={() => setAppMode("advanced")}
-                className={`relative rounded-xl px-3 py-3.5 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-4 sm:text-[0.9375rem] ${
+                className={`relative w-full min-w-0 rounded-xl px-3 py-3.5 text-center text-sm font-semibold transition-all duration-200 sm:px-4 sm:py-4 sm:text-[0.9375rem] ${
                   appMode === "advanced"
                     ? "bg-white text-foreground shadow-md ring-1 ring-slate-200/90"
                     : "text-muted hover:bg-white/50 hover:text-foreground"
@@ -1019,105 +1059,100 @@ export default function Home() {
               className="rounded-2xl border border-slate-200/80 bg-surface-elevated/95 p-6 shadow-[0_1px_0_rgba(15,23,42,0.04),0_12px_40px_-16px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:p-8"
               aria-labelledby="portfolio-heading"
             >
-              <div className="flex flex-col gap-1 border-b border-border pb-5">
-                <h2
-                  id="portfolio-heading"
-                  className="text-lg font-semibold tracking-tight text-foreground"
-                >
-                  Stock portfolio
-                </h2>
-                <p className="text-sm text-muted">
-                  Positions and cash you hold for the zakat year — refine with
-                  your advisor if needed.
+              <div className="mb-7 rounded-xl border border-slate-200/85 bg-white/95 p-5 shadow-sm sm:p-6">
+                <h3 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+                  Why do you hold these stocks?
+                </h3>
+                <p className="mt-1 text-xs leading-relaxed text-muted sm:text-sm">
+                  This sets a sensible default method. You can still change the
+                  method in your portfolio block below.
                 </p>
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHoldingIntent("active");
+                      setMethod("full");
+                    }}
+                    className={`rounded-xl border px-4 py-3.5 text-left text-sm font-semibold transition-all sm:py-4 ${
+                      holdingIntent === "active"
+                        ? "border-forest/45 bg-emerald-50/70 shadow-sm ring-2 ring-forest/15"
+                        : "border-slate-200/90 bg-white hover:border-slate-300"
+                    }`}
+                  >
+                    Trading / Short-term Profit
+                    <span className="mt-1.5 block text-xs font-normal leading-snug text-muted">
+                      Default: 100% full value on listed stocks.
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setHoldingIntent("longterm");
+                      setMethod("quarter");
+                    }}
+                    className={`rounded-xl border px-4 py-3.5 text-left text-sm font-semibold transition-all sm:py-4 ${
+                      holdingIntent === "longterm"
+                        ? "border-forest/45 bg-emerald-50/70 shadow-sm ring-2 ring-forest/15"
+                        : "border-slate-200/90 bg-white hover:border-slate-300"
+                    }`}
+                  >
+                    Long-term Investment / Retirement
+                    <span className="mt-1.5 block text-xs font-normal leading-snug text-muted">
+                      Suggested: 25% proxy or dividend method (adjust below).
+                    </span>
+                  </button>
+                </div>
               </div>
 
-              <div className="mt-6 flex flex-col gap-5">
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-foreground">
-                    Listed stock value {cc(currencyCode)}
-                  </span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    placeholder="0"
-                    value={stockPortfolio}
-                    onChange={(e) => setStockPortfolio(e.target.value)}
-                    className={`${INPUT_CLASS} tabular-nums`}
-                  />
-                </label>
-
-                <label className="flex flex-col gap-2">
-                  <span className="text-sm font-medium text-foreground">
-                    Liquid cash (same currency) {cc(currencyCode)}
-                  </span>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    placeholder="0"
-                    value={cashOnHand}
-                    onChange={(e) => setCashOnHand(e.target.value)}
-                    className={`${INPUT_CLASS} tabular-nums`}
-                  />
-                </label>
-
-                <div className="rounded-xl border border-slate-200/80 bg-slate-50/60 p-4">
-                  <span className="text-xs font-semibold uppercase tracking-wide text-muted">
-                    Holding intent
-                  </span>
-                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => setHoldingIntent("active")}
-                      className={`rounded-xl border px-4 py-3 text-left text-sm transition-all ${
-                        holdingIntent === "active"
-                          ? "border-forest/40 bg-white shadow-sm ring-1 ring-forest/15"
-                          : "border-transparent bg-white/60 hover:border-slate-200"
-                      }`}
-                    >
-                      <span className="font-semibold text-foreground">
-                        Active trading
-                      </span>
-                      <span className="mt-1 block text-xs leading-relaxed text-muted">
-                        Frequent buying/selling for capital gains.
-                      </span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setHoldingIntent("longterm")}
-                      className={`rounded-xl border px-4 py-3 text-left text-sm transition-all ${
-                        holdingIntent === "longterm"
-                          ? "border-forest/40 bg-white shadow-sm ring-1 ring-forest/15"
-                          : "border-transparent bg-white/60 hover:border-slate-200"
-                      }`}
-                    >
-                      <span className="font-semibold text-foreground">
-                        Long-term investment
-                      </span>
-                      <span className="mt-1 block text-xs leading-relaxed text-muted">
-                        Holding for fundamental growth and dividends.
-                      </span>
-                    </button>
-                  </div>
-                  {method === "quarter" ? (
-                    <p className="mt-3 text-xs leading-relaxed text-muted">
-                      Proxy on stocks:{" "}
-                      <span className="font-medium text-foreground">
-                        {Math.round(advancedSnapshot.stockProxyRate * 100)}%
-                      </span>{" "}
-                      {holdingIntent === "active"
-                        ? "(active profile)"
-                        : "(long-term profile)"}
-                      .
-                    </p>
-                  ) : null}
+              <div className="rounded-2xl border-2 border-emerald-900/[0.09] bg-gradient-to-b from-emerald-50/50 via-slate-50/40 to-white px-5 py-8 shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:px-8 sm:py-10">
+                <div className="border-b border-slate-200/70 pb-5">
+                  <h2
+                    id="portfolio-heading"
+                    className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
+                  >
+                    Stock portfolio
+                  </h2>
+                  <p className="mt-1 text-sm text-muted">
+                    Listed value, cash, method, and deductions for this zakat
+                    year.
+                  </p>
                 </div>
 
-                <fieldset className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white/70 p-4">
+                <div className="mt-6 flex flex-col gap-5">
+                  <label className="flex flex-col gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      Listed stock value {cc(currencyCode)}
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      placeholder="0"
+                      value={stockPortfolio}
+                      onChange={(e) => setStockPortfolio(e.target.value)}
+                      className={`${INPUT_CLASS} tabular-nums`}
+                    />
+                  </label>
+
+                  <label className="flex flex-col gap-2">
+                    <span className="text-sm font-medium text-foreground">
+                      Liquid cash (same currency) {cc(currencyCode)}
+                    </span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      placeholder="0"
+                      value={cashOnHand}
+                      onChange={(e) => setCashOnHand(e.target.value)}
+                      className={`${INPUT_CLASS} tabular-nums`}
+                    />
+                  </label>
+
+                <fieldset className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white/80 p-4">
                   <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-muted">
                     Calculation method
                   </legend>
@@ -1150,6 +1185,16 @@ export default function Home() {
                       </label>
                     ))}
                   </div>
+                  {method === "quarter" ? (
+                    <p className="text-[11px] font-medium text-muted">
+                      Stock proxy:{" "}
+                      <span className="text-foreground">
+                        {Math.round(advancedSnapshot.stockProxyRate * 100)}%
+                      </span>{" "}
+                      ({holdingIntent === "active" ? "active" : "long-term"}{" "}
+                      profile)
+                    </p>
+                  ) : null}
                 </fieldset>
 
                 <label className="flex flex-col gap-2">
@@ -1207,21 +1252,23 @@ export default function Home() {
                     className={`${INPUT_CLASS} tabular-nums`}
                   />
                   <span className="text-xs leading-relaxed text-muted">
-                    Funds not yet in haul may be excluded — confirm with your
-                    scholar.
+                    Optional exclusion for recent deposits.
                   </span>
                 </label>
+                </div>
+              </div>
 
+              <div className="mt-5 rounded-lg border border-dashed border-slate-200/90 bg-slate-50/25 p-3 opacity-[0.72] sm:p-4">
                 <button
                   type="button"
-                  className={OTHER_ASSETS_TOGGLE}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-100/70 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-forest/20 focus-visible:ring-offset-1"
                   aria-expanded={showAdvancedOtherAssets}
                   onClick={() => setShowAdvancedOtherAssets((v) => !v)}
                 >
-                  <span className="text-base leading-none" aria-hidden>
+                  <span className="text-sm leading-none opacity-70" aria-hidden>
                     +
                   </span>
-                  Add Other Assets (Optional)
+                  Other assets (optional)
                 </button>
                 <div
                   className={`overflow-hidden transition-[max-height] duration-300 ease-out ${
@@ -1271,25 +1318,25 @@ export default function Home() {
                     </label>
                   </div>
                 </div>
-
-                <SilverPriceNisabSection
-                  currencyCode={currencyCode}
-                  silverPerGramInput={silverPerGramInput}
-                  onSilverChange={handleSilverPerGramInputChange}
-                  derivedNisabFormatted={derivedNisabFromSilverDisplay}
-                  lastVerifiedDisplay={lastVerifiedDisplay}
-                  silverStale={silverLastVerifiedStale}
-                  googleSearchHref={silverGoogleSearchHref}
-                  onResetDefault={handleResetSilverToDefault}
-                  resetDisabled={
-                    resetAnchorSilverPerGram == null ||
-                    resetAnchorSilverPerGram <= 0
-                  }
-                  nisabMetWithOutsideAssets={nisabMetWithOutsideAssets}
-                  onToggleOutside={setNisabMetWithOutsideAssets}
-                  inputClassName={INPUT_CLASS}
-                />
               </div>
+
+              <SilverPriceNisabSection
+                currencyCode={currencyCode}
+                silverPerGramInput={silverPerGramInput}
+                onSilverChange={handleSilverPerGramInputChange}
+                derivedNisabFormatted={derivedNisabFromSilverDisplay}
+                lastVerifiedDisplay={lastVerifiedDisplay}
+                silverStale={silverLastVerifiedStale}
+                googleSearchHref={silverGoogleSearchHref}
+                onResetDefault={handleResetSilverToDefault}
+                resetDisabled={
+                  resetAnchorSilverPerGram == null ||
+                  resetAnchorSilverPerGram <= 0
+                }
+                nisabMetWithOutsideAssets={nisabMetWithOutsideAssets}
+                onToggleOutside={setNisabMetWithOutsideAssets}
+                inputClassName={INPUT_CLASS}
+              />
             </section>
           )}
 
@@ -1309,160 +1356,168 @@ export default function Home() {
               </span>
             </div>
 
-            <p className="mt-2 text-sm text-muted">{active.methodDetail}</p>
+            <p className="mt-2 text-xs font-medium uppercase tracking-wide text-muted">
+              {active.methodLabel}
+            </p>
 
             <div
-              className={`mt-5 inline-flex w-full max-w-full rounded-full border px-4 py-2 text-sm font-medium sm:w-auto ${nisabBadgeClass}`}
+              className={`mt-6 rounded-2xl border px-5 py-6 sm:px-6 ${
+                eligibilityCard.positive
+                  ? "border-emerald-200/90 bg-emerald-50/55"
+                  : "border-slate-200/90 bg-slate-50/90"
+              }`}
               role="status"
             >
-              {nisabBadgeLabel}
+              <p
+                className={`text-xl font-bold tracking-tight sm:text-2xl ${
+                  eligibilityCard.positive
+                    ? "text-emerald-900"
+                    : "text-slate-500"
+                }`}
+              >
+                {eligibilityCard.title}
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-slate-600">
+                {eligibilityCard.subtext}
+              </p>
             </div>
 
             {appMode === "quick" ? (
-              <div className="mt-6 space-y-0 rounded-2xl border border-slate-200/90 bg-slate-50/40 p-1">
-                <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 px-4 py-4">
-                  <span className="text-sm text-muted">
-                    Stocks + idle cash
-                  </span>
-                  <span className="text-right text-sm font-semibold tabular-nums text-foreground">
-                    {formatWithSymbol(
-                      quickSnapshot.stocksPlusCash,
-                      currencySymbol,
-                    )}
-                  </span>
-                </div>
+              <div className="mt-6 rounded-2xl border border-slate-200/90 bg-slate-50/50 px-4 py-1 sm:px-5">
+                <MathLine
+                  sign="+"
+                  label="Stocks + cash"
+                  value={formatWithSymbol(
+                    quickSnapshot.stocksPlusCash,
+                    currencySymbol,
+                  )}
+                />
                 {quickSnapshot.optionalOtherAssets > 0 ? (
-                  <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 px-4 py-4">
-                    <span className="text-sm text-muted">
-                      Plus: gold &amp; silver, other savings
-                    </span>
-                    <span className="text-right text-sm font-semibold tabular-nums text-foreground">
-                      {formatWithSymbol(
-                        quickSnapshot.optionalOtherAssets,
-                        currencySymbol,
-                      )}
-                    </span>
-                  </div>
-                ) : null}
-                <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 px-4 py-4">
-                  <span className="text-sm text-muted">
-                    Minus: fresh capital + debts
-                  </span>
-                  <span className="text-right text-sm font-semibold tabular-nums text-foreground">
-                    −
-                    {formatWithSymbol(
-                      quickSnapshot.freshCapitalPlusDebts,
+                  <MathLine
+                    sign="+"
+                    label="Other assets"
+                    value={formatWithSymbol(
+                      quickSnapshot.optionalOtherAssets,
                       currencySymbol,
                     )}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 bg-white/60 px-4 py-4">
-                  <div className="min-w-0">
-                    <span className="block text-sm font-medium text-foreground">
-                      Net zakatable amount
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      {quickSnapshot.methodLabel}
-                    </span>
-                  </div>
-                  <span className="shrink-0 text-right text-base font-semibold tabular-nums text-foreground">
-                    {formatWithSymbol(
+                  />
+                ) : null}
+                <MathLine
+                  sign="−"
+                  label="Fresh capital + debts"
+                  value={formatWithSymbol(
+                    quickSnapshot.freshCapitalPlusDebts,
+                    currencySymbol,
+                  )}
+                />
+                <div className="border-t-2 border-slate-300/50 pt-0.5">
+                  <MathLine
+                    sign="="
+                    label="Net zakatable"
+                    value={formatWithSymbol(
                       quickSnapshot.netZakatableAmount,
                       currencySymbol,
                     )}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-4 px-4 py-5">
-                  <span className="text-sm font-medium text-foreground">
-                    Final zakat due (2.5%)
-                  </span>
-                  <span className="text-3xl font-bold tabular-nums tracking-tight text-forest sm:text-4xl">
-                    {formatWithSymbol(
-                      quickSnapshot.zakatDue,
-                      currencySymbol,
-                    )}
-                  </span>
+                  />
                 </div>
               </div>
             ) : (
-              <div className="mt-6 space-y-0 rounded-2xl border border-slate-200/90 bg-slate-50/40 p-1">
-                <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 px-4 py-4">
-                  <span className="text-sm text-muted">
-                    Listed stocks + brokerage cash
-                  </span>
-                  <span className="text-right text-sm font-semibold tabular-nums text-foreground">
-                    {formatWithSymbol(
-                      advancedSnapshot.coreListedPlusCash,
-                      currencySymbol,
-                    )}
-                  </span>
-                </div>
-                {advancedSnapshot.optionalOtherAssets > 0 ? (
-                  <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 px-4 py-4">
-                    <span className="text-sm text-muted">
-                      Plus: gold &amp; silver, other savings
-                    </span>
-                    <span className="text-right text-sm font-semibold tabular-nums text-foreground">
-                      {formatWithSymbol(
-                        advancedSnapshot.optionalOtherAssets,
+              <div className="mt-6 rounded-2xl border border-slate-200/90 bg-slate-50/50 px-4 py-1 sm:px-5">
+                {method === "dividend" ? (
+                  <>
+                    <MathLine
+                      sign="+"
+                      label="Dividends (stated)"
+                      value={formatWithSymbol(
+                        parseMoneyInput(annualDividends),
                         currencySymbol,
                       )}
-                    </span>
-                  </div>
-                ) : null}
-                <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 px-4 py-4">
-                  <span className="text-sm text-muted">
-                    Minus: liabilities / exempt capital
-                  </span>
-                  <span className="text-right text-sm font-semibold tabular-nums text-foreground">
-                    {method === "dividend" ? (
-                      <span className="text-muted">—</span>
-                    ) : (
-                      `−${formatWithSymbol(advancedSnapshot.liabilitiesAndExempt, currencySymbol)}`
-                    )}
-                  </span>
-                </div>
-                {method === "dividend" ? (
-                  <p className="px-4 pb-2 text-[11px] leading-relaxed text-muted">
-                    Dividend-only mode uses dividend income as the zakatable
-                    base; portfolio liabilities and exempt capital are not
-                    subtracted here.
-                  </p>
-                ) : null}
-                <div className="flex items-center justify-between gap-4 border-b border-slate-200/80 bg-white/60 px-4 py-4">
-                  <div className="min-w-0">
-                    <span className="block text-sm font-medium text-foreground">
-                      Net zakatable amount
-                    </span>
-                    <span className="mt-0.5 block text-[11px] text-muted">
-                      {advancedSnapshot.methodLabel}
-                    </span>
-                  </div>
-                  <span className="shrink-0 text-right text-base font-semibold tabular-nums text-foreground">
-                    {formatWithSymbol(
-                      advancedSnapshot.netZakatableAmount,
-                      currencySymbol,
-                    )}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-4 px-4 py-5">
-                  <span className="text-sm font-medium text-foreground">
-                    Final zakat due (2.5%)
-                  </span>
-                  <span className="text-3xl font-bold tabular-nums tracking-tight text-forest sm:text-4xl">
-                    {formatWithSymbol(
-                      advancedSnapshot.zakatDue,
-                      currencySymbol,
-                    )}
-                  </span>
-                </div>
+                    />
+                    {advancedSnapshot.optionalOtherAssets > 0 ? (
+                      <MathLine
+                        sign="+"
+                        label="Other assets"
+                        value={formatWithSymbol(
+                          advancedSnapshot.optionalOtherAssets,
+                          currencySymbol,
+                        )}
+                      />
+                    ) : null}
+                    <div className="border-t-2 border-slate-300/50 pt-0.5">
+                      <MathLine
+                        sign="="
+                        label="Net zakatable"
+                        value={formatWithSymbol(
+                          advancedSnapshot.netZakatableAmount,
+                          currencySymbol,
+                        )}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <MathLine
+                      sign="+"
+                      label="Listed stocks + cash"
+                      value={formatWithSymbol(
+                        advancedSnapshot.coreListedPlusCash,
+                        currencySymbol,
+                      )}
+                    />
+                    {advancedSnapshot.optionalOtherAssets > 0 ? (
+                      <MathLine
+                        sign="+"
+                        label="Other assets"
+                        value={formatWithSymbol(
+                          advancedSnapshot.optionalOtherAssets,
+                          currencySymbol,
+                        )}
+                      />
+                    ) : null}
+                    <MathLine
+                      sign="−"
+                      label="Liabilities + exempt capital"
+                      value={formatWithSymbol(
+                        advancedSnapshot.liabilitiesAndExempt,
+                        currencySymbol,
+                      )}
+                    />
+                    <div className="border-t-2 border-slate-300/50 pt-0.5">
+                      <MathLine
+                        sign="="
+                        label="Net zakatable"
+                        value={formatWithSymbol(
+                          advancedSnapshot.netZakatableAmount,
+                          currencySymbol,
+                        )}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             )}
 
-            <p className="mt-6 text-center text-xs leading-relaxed text-muted">
-              {appMode === "quick"
-                ? "This tool follows simplified principles for stock investors. Consult a qualified scholar for your situation."
-                : "This tool follows simplified principles. Choose the method that aligns with your understanding."}
+            <div className="mt-6 flex flex-col gap-2 border-t border-slate-200/80 pt-6 sm:flex-row sm:items-end sm:justify-between">
+              <span className="text-sm font-semibold text-foreground">
+                Zakat due (2.5%)
+              </span>
+              <span className="text-3xl font-bold tabular-nums tracking-tight text-forest sm:text-4xl">
+                {formatWithSymbol(
+                  Math.max(0, active.zakatDue),
+                  currencySymbol,
+                )}
+              </span>
+            </div>
+
+            <p className="mt-7 border-t border-slate-200/70 pt-6 text-center text-[11px] leading-relaxed text-slate-500 sm:text-xs">
+              Different scholarly views exist. This tool follows established
+              Shariah standards for equities (AAOIFI/SGC). You choose the
+              method; we ensure the math is transparent.
+            </p>
+
+            <p className="mt-4 text-center text-[11px] leading-relaxed text-muted">
+              Educational estimate only. Confirm with a qualified scholar for
+              your situation.
             </p>
           </section>
 
@@ -1535,6 +1590,21 @@ export default function Home() {
           </section>
         </div>
       </main>
+
+      <footer className="mt-auto border-t border-slate-200/80 bg-white/70 px-4 py-4 backdrop-blur-md sm:py-5">
+        <div
+          className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-center"
+          aria-live="polite"
+        >
+          <span className="cz-social-proof-dot" aria-hidden />
+          <p className="text-[11px] leading-snug text-slate-500 sm:text-xs">
+            <span className="font-semibold tabular-nums text-slate-700">
+              [{Math.max(42, liveInvestorCount)}+]
+            </span>{" "}
+            investors calculated their Zakat in the last 24 hours.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

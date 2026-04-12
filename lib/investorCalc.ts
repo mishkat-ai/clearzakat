@@ -119,6 +119,8 @@ export function computeInvestorSnapshot(
     zakatDue = netZakatableAmount * 0.025;
   }
 
+  zakatDue = Math.max(0, zakatDue);
+
   return {
     coreListedPlusCash,
     optionalOtherAssets,

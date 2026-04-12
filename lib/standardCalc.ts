@@ -60,6 +60,8 @@ export function computeQuickPortfolioSnapshot(input: {
     zakatDue = net * 0.025;
   }
 
+  zakatDue = Math.max(0, zakatDue);
+
   const methodDetail =
     optionalOtherAssets > 0
       ? "Listed value plus idle brokerage cash, optional gold/savings, minus exempt deposits and debts."
